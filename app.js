@@ -8,6 +8,7 @@ const { campgroundSchema } = require("./schema.js");
 const catchAsync = require("./utils/catchAsync");
 const ExpressError = require("./utils/expressError");
 const Campground = require("./models/campground");
+const Review = require("./models/review");
 
 mongoose.connect("mongodb://localhost:27017/yelp-camp");
 
@@ -102,6 +103,18 @@ app.delete(
   })
 );
 
+app.post(
+  "/campgrounds/:id/reviews",
+  catchAsync(async (req, res) => {
+    const campground = await Campground.findById(req.params.id);
+    const review = new Review(req.body.review);
+    campground.reviews.push(review);
+    await review.save();
+    await campground.save();
+    res.redirect(`/campgrounds/${campground._id}`);
+  })
+);
+
 app.all("*", (req, res, next) => {
   next(new ExpressError("Page not found", 404));
 });
@@ -110,6 +123,7 @@ app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;
   if (!err.message) err.message = "Oh No, Something went Wrong!!";
   res.status(statusCode).render("error", { err });
+  console.log(err);
 });
 
 app.listen(3000, () => {
